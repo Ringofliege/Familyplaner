@@ -75,17 +75,38 @@ The engine assigns tasks based on a priority cascade:
 
 ### Fairness Scoring
 
-Points are weighted by effort and category:
+Points are weighted by attention level, category, and type:
 
-| Factor | Multiplier |
-|--------|-----------|
-| Passive effort | 1 point |
-| Light effort | 2 points |
-| Moderate effort | 3 points |
-| Heavy effort | 5 points |
-| Mental load | ×1.5 |
-| Childcare | ×1.5 |
-| Duration bonus | +1 per 30 min over 15 min |
+| Attention Level | Base Points |
+|-----------------|-------------|
+| Passive | 1 |
+| Light | 2 |
+| Moderate | 4 |
+| Heavy | 6 |
+
+| Category | Multiplier |
+|----------|-----------|
+| Childcare | ×2.0 |
+| Food | ×1.3 |
+| Pets | ×1.2 |
+| Household / Admin / Garden | ×1.0 |
+| Personal | ×0.5 |
+
+| Type | Multiplier |
+|------|-----------|
+| Mental-load | ×1.5 |
+| Project | ×1.1 |
+| Recurring / One-time | ×1.0 |
+
+| Duration | Bonus |
+|----------|-------|
+| ≤ 15 min | +0 |
+| 16–30 min | +1 |
+| 31–60 min | +2 |
+| 61–120 min | +4 |
+| > 120 min | +6 |
+
+Additional: +1 bonus on high-load days. Points clamped to [1, 20].
 
 ### Smart Features
 
