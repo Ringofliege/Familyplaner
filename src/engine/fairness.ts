@@ -10,45 +10,68 @@ import type {
 // calculatePoints
 // ---------------------------------------------------------------------------
 
-/** Effort → base point mapping. */
-const EFFORT_BASE: Record<string, number> = {
+/** Attention level → base point mapping. */
+const ATTENTION_BASE: Record<string, number> = {
   passive: 1,
   light: 2,
-  moderate: 3,
-  heavy: 5,
+  moderate: 4,
+  heavy: 6,
+};
+
+/** Category multipliers (applied to base). */
+const CATEGORY_MULTIPLIER: Record<string, number> = {
+  childcare: 2.0,
+  pets: 1.2,
+  household: 1.0,
+  food: 1.3,
+  admin: 1.0,
+  personal: 0.5,
+  garden: 1.0,
+};
+
+/** Type multipliers (stacks with category). */
+const TYPE_MULTIPLIER: Record<string, number> = {
+  'mental-load': 1.5,
+  recurring: 1.0,
+  'one-time': 1.0,
+  project: 1.1,
 };
 
 /**
  * Calculate the fairness points a single task is worth.
  *
  * Formula:
- * - Start with the effort base (passive=1, light=2, moderate=3, heavy=5).
- * - Apply a ×1.5 multiplier for mental-load type tasks.
- * - Apply a ×1.5 multiplier for childcare category.
- * - Add +1 for every full 30 minutes of duration above 15 min.
+ * - Start with the attention base (passive=1, light=2, moderate=4, heavy=6).
+ * - Apply a category multiplier (e.g. childcare ×2.0, personal ×0.5).
+ * - Apply a type multiplier (e.g. mental-load ×1.5, project ×1.1).
+ * - Add a tiered duration bonus (≤15→+0, 16-30→+1, 31-60→+2, 61-120→+4, >120→+6).
+ * - Add +1 bonus on high-load days.
+ * - Clamp result to [1, 20].
  *
  * @param task The task to score.
- * @returns A numeric fairness-point value (≥ 1).
+ * @param isHighLoadDay Whether the task falls on a high-load day.
+ * @returns A numeric fairness-point value in [1, 20].
  */
-export function calculatePoints(task: Task): number {
-  let points = EFFORT_BASE[task.effort] ?? 1;
+export function calculatePoints(task: Task, isHighLoadDay = false): number {
+  let points = ATTENTION_BASE[task.effort] ?? 1;
 
-  // Mental-load multiplier
-  if (task.type === 'mental-load') {
-    points *= 1.5;
-  }
+  // Category multiplier
+  points *= CATEGORY_MULTIPLIER[task.category] ?? 1.0;
 
-  // Childcare multiplier
-  if (task.category === 'childcare') {
-    points *= 1.5;
-  }
+  // Type multiplier (mental-load premium stacks)
+  points *= TYPE_MULTIPLIER[task.type] ?? 1.0;
 
-  // Duration bonus: +1 per 30-min block above the first 15 min
-  if (task.durationMinutes > 15) {
-    points += Math.floor((task.durationMinutes - 15) / 30);
-  }
+  // Duration scaling
+  if (task.durationMinutes > 120) points += 6;
+  else if (task.durationMinutes > 60) points += 4;
+  else if (task.durationMinutes > 30) points += 2;
+  else if (task.durationMinutes > 15) points += 1;
 
-  return Math.max(1, Math.round(points * 100) / 100);
+  // High-load day bonus
+  if (isHighLoadDay) points += 1;
+
+  // Anti-gaming: clamp to [1, 20]
+  return Math.min(20, Math.max(1, Math.round(points * 100) / 100));
 }
 
 // ---------------------------------------------------------------------------

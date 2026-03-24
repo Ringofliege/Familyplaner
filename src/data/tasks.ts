@@ -1,8 +1,9 @@
 import type { Task } from '../models/types';
 
-// Fairness-point scale:
-//   passive: 1 | light: 2 | moderate: 3 | heavy: 5 | mental-load: 3
-//   childcare category multiplier: ×1.5
+// Fairness-point scale (attention-based):
+//   passive: 1 | light: 2 | moderate: 4 | heavy: 6
+//   Category multipliers: childcare ×2.0, pets ×1.2, food ×1.3, personal ×0.5
+//   Type multipliers: mental-load ×1.5, project ×1.1
 
 export const recurringTasks: Task[] = [
   // --- Laundry ---------------------------------------------------------
@@ -26,7 +27,7 @@ export const recurringTasks: Task[] = [
     preferredAssignee: 'mother',
     recurrence: 'daily',
     dependsOn: ['task-laundry-hang'],
-    fairnessPoints: 1,
+    fairnessPoints: 2,
   },
   {
     id: 'task-laundry-put-away',
@@ -73,7 +74,7 @@ export const recurringTasks: Task[] = [
     effort: 'moderate',
     durationMinutes: 10,
     recurrence: 'biweekly',
-    fairnessPoints: 3,
+    fairnessPoints: 5,
   },
   {
     id: 'task-cat-supplies',
@@ -84,7 +85,7 @@ export const recurringTasks: Task[] = [
     effort: 'passive',
     durationMinutes: 10,
     recurrence: 'weekly',
-    fairnessPoints: 3,
+    fairnessPoints: 2,
   },
 
   // --- Household admin -------------------------------------------------
@@ -97,7 +98,7 @@ export const recurringTasks: Task[] = [
     durationMinutes: 5,
     recurrence: 'weekly',
     recurrenceDays: [2], // Tuesday
-    fairnessPoints: 3,
+    fairnessPoints: 2,
   },
 
   // --- Food planning ---------------------------------------------------
@@ -111,7 +112,7 @@ export const recurringTasks: Task[] = [
     durationMinutes: 30,
     recurrence: 'weekly',
     recurrenceDays: [0], // Sunday
-    fairnessPoints: 3,
+    fairnessPoints: 3,  // base=1 × food(1.3) × mental-load(1.5) + dur(16-30→+1) = 2.95 → 3
   },
 
   // --- Kindergarten ----------------------------------------------------
@@ -125,7 +126,7 @@ export const recurringTasks: Task[] = [
     durationMinutes: 60,
     assignedTo: 'mother',
     recurrence: 'weekly',
-    fairnessPoints: 5, // 3 (mental-load) × 1.5 (childcare) ≈ 5
+    fairnessPoints: 5, // base=1 × childcare(2.0) × mental-load(1.5) + dur(31-60→+2) = 5
   },
 
   // --- Training prep (mental load) ------------------------------------
@@ -140,7 +141,7 @@ export const recurringTasks: Task[] = [
     assignedTo: 'mother',
     recurrence: 'weekly',
     recurrenceDays: [1, 2], // Monday or Tuesday
-    fairnessPoints: 3,
+    fairnessPoints: 1,  // base=1 × personal(0.5) × mental-load(1.5) = 0.75 → clamp to 1
   },
   {
     id: 'task-training-prep-fri',
@@ -153,6 +154,6 @@ export const recurringTasks: Task[] = [
     assignedTo: 'mother',
     recurrence: 'weekly',
     recurrenceDays: [4, 5], // Thursday or Friday
-    fairnessPoints: 3,
+    fairnessPoints: 1,  // base=1 × personal(0.5) × mental-load(1.5) = 0.75 → clamp to 1
   },
 ];

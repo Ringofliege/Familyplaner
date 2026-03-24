@@ -20,27 +20,31 @@ function makeTask(overrides: Partial<Task> = {}): Task {
 }
 
 describe('calculatePoints', () => {
-  it('returns 1 for passive effort', () => {
+  it('returns 1 for passive effort (household, recurring)', () => {
     const task = makeTask({ effort: 'passive', durationMinutes: 10 });
+    // base=1, household(×1.0), recurring(×1.0) = 1
     expect(calculatePoints(task)).toBe(1);
   });
 
-  it('returns 2 for light effort', () => {
+  it('returns 2 for light effort (household, recurring)', () => {
     const task = makeTask({ effort: 'light', durationMinutes: 10 });
+    // base=2, household(×1.0), recurring(×1.0) = 2
     expect(calculatePoints(task)).toBe(2);
   });
 
-  it('returns 3 for moderate effort', () => {
+  it('returns 4 for moderate effort (household, recurring)', () => {
     const task = makeTask({ effort: 'moderate', durationMinutes: 10 });
-    expect(calculatePoints(task)).toBe(3);
+    // base=4, household(×1.0), recurring(×1.0) = 4
+    expect(calculatePoints(task)).toBe(4);
   });
 
-  it('returns 5 for heavy effort', () => {
+  it('returns 6 for heavy effort (household, recurring)', () => {
     const task = makeTask({ effort: 'heavy', durationMinutes: 10 });
-    expect(calculatePoints(task)).toBe(5);
+    // base=6, household(×1.0), recurring(×1.0) = 6
+    expect(calculatePoints(task)).toBe(6);
   });
 
-  it('applies ×1.5 mental load multiplier', () => {
+  it('applies ×1.5 mental-load type multiplier', () => {
     const base = makeTask({ effort: 'moderate', type: 'recurring', durationMinutes: 10 });
     const mentalLoad = makeTask({ effort: 'moderate', type: 'mental-load', durationMinutes: 10 });
     const basePoints = calculatePoints(base);
@@ -48,12 +52,12 @@ describe('calculatePoints', () => {
     expect(mlPoints).toBe(basePoints * 1.5);
   });
 
-  it('applies ×1.5 childcare category multiplier', () => {
+  it('applies ×2.0 childcare category multiplier', () => {
     const base = makeTask({ effort: 'light', category: 'household', durationMinutes: 10 });
     const childcare = makeTask({ effort: 'light', category: 'childcare', durationMinutes: 10 });
     const basePoints = calculatePoints(base);
     const ccPoints = calculatePoints(childcare);
-    expect(ccPoints).toBe(basePoints * 1.5);
+    expect(ccPoints).toBe(basePoints * 2.0);
   });
 
   it('stacks mental-load and childcare multipliers', () => {
@@ -63,27 +67,57 @@ describe('calculatePoints', () => {
       category: 'childcare',
       durationMinutes: 10,
     });
-    // base=1, ×1.5 mental, ×1.5 childcare = 2.25
-    expect(calculatePoints(task)).toBe(2.25);
+    // base=1, ×2.0 childcare, ×1.5 mental-load = 3
+    expect(calculatePoints(task)).toBe(3);
   });
 
-  it('adds +1 duration bonus per 30 min above 15 min', () => {
-    // 45 min → 1 full 30-min block above 15 min → +1
+  it('applies tiered duration bonus: 16-30 min → +1', () => {
     const short = makeTask({ effort: 'light', durationMinutes: 15 });
-    const long = makeTask({ effort: 'light', durationMinutes: 45 });
+    const long = makeTask({ effort: 'light', durationMinutes: 25 });
+    // short: base=2, no bonus = 2; long: base=2 + 1 = 3
+    expect(calculatePoints(short)).toBe(2);
     expect(calculatePoints(long)).toBe(calculatePoints(short) + 1);
   });
 
-  it('adds +2 for 75 min duration', () => {
-    // 75 min → (75-15)/30 = 2 → +2
+  it('applies tiered duration bonus: 61-120 min → +4', () => {
     const base = makeTask({ effort: 'light', durationMinutes: 10 });
     const long = makeTask({ effort: 'light', durationMinutes: 75 });
-    expect(calculatePoints(long)).toBe(calculatePoints(base) + 2);
+    // base: 2; long: 2 + 4 = 6
+    expect(calculatePoints(long)).toBe(calculatePoints(base) + 4);
   });
 
   it('never returns less than 1', () => {
     const task = makeTask({ effort: 'passive', durationMinutes: 1 });
     expect(calculatePoints(task)).toBeGreaterThanOrEqual(1);
+  });
+
+  it('clamps to maximum 20 points', () => {
+    const task = makeTask({
+      effort: 'heavy',
+      category: 'childcare',
+      type: 'mental-load',
+      durationMinutes: 180,
+    });
+    // base=6, ×2.0 childcare, ×1.5 mental-load = 18, +6 duration = 24 → clamped to 20
+    expect(calculatePoints(task)).toBe(20);
+  });
+
+  it('applies ×0.5 personal category multiplier', () => {
+    const task = makeTask({
+      effort: 'passive',
+      category: 'personal',
+      type: 'mental-load',
+      durationMinutes: 15,
+    });
+    // base=1, ×0.5 personal, ×1.5 mental-load = 0.75 → clamped to 1
+    expect(calculatePoints(task)).toBe(1);
+  });
+
+  it('adds +1 bonus on high-load day', () => {
+    const task = makeTask({ effort: 'light', durationMinutes: 10 });
+    const normal = calculatePoints(task, false);
+    const highLoad = calculatePoints(task, true);
+    expect(highLoad).toBe(normal + 1);
   });
 });
 
