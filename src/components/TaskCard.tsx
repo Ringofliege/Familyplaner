@@ -82,7 +82,7 @@ export function TaskCard({
               <button
                 onClick={() => onComplete(task.id)}
                 className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-green-600 hover:bg-green-50 active:bg-green-100 transition-colors"
-                aria-label="Complete task"
+                aria-label="Aufgabe erledigen"
               >
                 <Check className="w-5 h-5" />
               </button>
@@ -91,7 +91,7 @@ export function TaskCard({
               <button
                 onClick={() => onTakeOver(task.id)}
                 className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-blue-600 hover:bg-blue-50 active:bg-blue-100 transition-colors"
-                aria-label="Take over task"
+                aria-label="Aufgabe übernehmen"
               >
                 <ArrowRightLeft className="w-5 h-5" />
               </button>
@@ -100,7 +100,7 @@ export function TaskCard({
               <button
                 onClick={() => onThankYou(task.id)}
                 className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-pink-500 hover:bg-pink-50 active:bg-pink-100 transition-colors"
-                aria-label="Say thank you"
+                aria-label="Danke sagen"
               >
                 <Heart className="w-5 h-5" />
               </button>

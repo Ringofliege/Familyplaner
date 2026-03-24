@@ -33,7 +33,7 @@ export function SuggestionCard({ suggestion, onDismiss, onAccept }: SuggestionCa
             <button
               onClick={() => onDismiss(suggestion.id)}
               className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100 active:bg-slate-200 transition-colors"
-              aria-label="Dismiss suggestion"
+              aria-label="Vorschlag ausblenden"
             >
               <X className="w-5 h-5" />
             </button>
@@ -42,7 +42,7 @@ export function SuggestionCard({ suggestion, onDismiss, onAccept }: SuggestionCa
             <button
               onClick={() => onAccept(suggestion.id)}
               className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-blue-600 hover:bg-blue-50 active:bg-blue-100 transition-colors"
-              aria-label="Accept suggestion"
+              aria-label="Vorschlag annehmen"
             >
               <ChevronRight className="w-5 h-5" />
             </button>

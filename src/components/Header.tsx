@@ -21,7 +21,7 @@ export function Header({ currentUser, onSwitchUser, stressMode }: HeaderProps) {
           {stressMode && (
             <span
               className="flex items-center gap-1 rounded-full bg-yellow-100 text-yellow-700 px-2 py-0.5 text-xs font-semibold"
-              title="Stress mode active"
+              title="Stress-Modus aktiv"
             >
               <Zap className="w-3.5 h-3.5" />
               Stress
@@ -32,7 +32,7 @@ export function Header({ currentUser, onSwitchUser, stressMode }: HeaderProps) {
         <button
           onClick={toggleUser}
           className="min-w-[44px] min-h-[44px] flex items-center justify-center"
-          aria-label={`Switch to ${currentUser === 'mother' ? 'father' : 'mother'} view`}
+          aria-label={`Wechsle zu ${currentUser === 'mother' ? 'Papa' : 'Mama'}`}
         >
           <Avatar memberId={currentUser} size="sm" />
         </button>

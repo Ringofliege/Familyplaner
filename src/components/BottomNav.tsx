@@ -2,11 +2,11 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Calendar, CheckSquare, Home, UtensilsCrossed, Users } from 'lucide-react';
 
 const tabs = [
-  { path: '/', label: 'Today', icon: Home },
-  { path: '/calendar', label: 'Calendar', icon: Calendar },
-  { path: '/tasks', label: 'Tasks', icon: CheckSquare },
-  { path: '/meals', label: 'Meals', icon: UtensilsCrossed },
-  { path: '/family', label: 'Family', icon: Users },
+  { path: '/', label: 'Heute', icon: Home },
+  { path: '/calendar', label: 'Kalender', icon: Calendar },
+  { path: '/tasks', label: 'Aufgaben', icon: CheckSquare },
+  { path: '/meals', label: 'Essen', icon: UtensilsCrossed },
+  { path: '/family', label: 'Familie', icon: Users },
 ] as const;
 
 export function BottomNav() {
