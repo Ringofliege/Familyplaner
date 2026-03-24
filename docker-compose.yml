@@ -1,10 +1,64 @@
 services:
-  familyos:
+  # --------------------------------------------------------------------------
+  # PostgreSQL database
+  # --------------------------------------------------------------------------
+  postgres:
+    image: postgres:17-alpine
+    container_name: familyos-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-familyos}
+      POSTGRES_USER: ${POSTGRES_USER:-familyos}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-familyos_secret}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-familyos}"]
+      interval: 10s
+      timeout: 3s
+      start_period: 10s
+      retries: 5
+
+  # --------------------------------------------------------------------------
+  # Backend API (Express + Prisma)
+  # --------------------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: familyos-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-familyos}:${POSTGRES_PASSWORD:-familyos_secret}@postgres:5432/${POSTGRES_DB:-familyos}
+      PORT: "4000"
+      NODE_ENV: production
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+    ports:
+      - "${API_PORT:-4000}:4000"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:4000/health"]
+      interval: 30s
+      timeout: 3s
+      start_period: 15s
+      retries: 3
+
+  # --------------------------------------------------------------------------
+  # Frontend (React SPA via nginx)
+  # --------------------------------------------------------------------------
+  frontend:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: familyos
+    container_name: familyos-web
     restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
     ports:
       - "${PORT:-3000}:80"
     healthcheck:
@@ -13,3 +67,6 @@ services:
       timeout: 3s
       start_period: 5s
       retries: 3
+
+volumes:
+  postgres_data:
