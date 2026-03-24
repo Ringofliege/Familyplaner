@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { suggestMeal, getMealPlanForWeek } from '../meals';
 import { calculateTimeBlocks } from '../energy';
-import type { Meal, MealPlanEntry, TimeBlock, WorkSchedule } from '../../models/types';
+import type { MealPlanEntry, TimeBlock, WorkSchedule } from '../../models/types';
 import { sampleMeals } from '../../data/meals';
 import {
   motherWorkSchedule,

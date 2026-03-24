@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { calculateTimeBlocks, getDayLoad, getAvailableSlots } from '../energy';
-import type { DayOfWeek, TimeBlock, WorkSchedule, CalendarEvent } from '../../models/types';
+import type { WorkSchedule } from '../../models/types';
 import {
   motherWorkSchedule,
   fatherWorkSchedule,
