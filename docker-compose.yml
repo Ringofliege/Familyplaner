@@ -1,0 +1,15 @@
+services:
+  familyos:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: familyos
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3000}:80"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/health"]
+      interval: 30s
+      timeout: 3s
+      start_period: 5s
+      retries: 3
