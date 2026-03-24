@@ -11,6 +11,7 @@ import type {
 } from '../../models/types';
 import type { FamilyState } from '../../hooks/useFamilyState';
 import { Card, TaskCard, Badge, EmptyState } from '../../components';
+import { calculatePoints } from '../../engine/fairness';
 
 interface TasksPageProps {
   state: FamilyState;
@@ -119,8 +120,9 @@ export function TasksPage({
       effort: form.effort,
       durationMinutes: parseInt(form.duration, 10) || 15,
       assignedTo: form.assignedTo || undefined,
-      fairnessPoints: form.effort === 'passive' ? 1 : form.effort === 'light' ? 2 : form.effort === 'moderate' ? 3 : 5,
+      fairnessPoints: 0, // placeholder, will be recalculated
     };
+    newTask.fairnessPoints = calculatePoints(newTask);
 
     addTask(newTask);
     setForm(EMPTY_FORM);
