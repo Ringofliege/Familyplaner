@@ -5,6 +5,13 @@ import { todayISO, todayDow } from '../utils/dates.js';
 
 export const tasksRouter = Router();
 
+class TaskNotFoundError extends Error {
+  constructor(id: string) {
+    super(`Task definition '${id}' not found`);
+    this.name = 'TaskNotFoundError';
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Zod schemas for request validation
 // ---------------------------------------------------------------------------
@@ -222,7 +229,7 @@ tasksRouter.post('/:id/complete', async (req, res) => {
       });
 
       if (!taskDef) {
-        throw new Error('TASK_NOT_FOUND');
+        throw new TaskNotFoundError(id);
       }
 
       // Create or reuse completion record (idempotent)
@@ -263,8 +270,8 @@ tasksRouter.post('/:id/complete', async (req, res) => {
 
     res.json(result);
   } catch (err) {
-    if (err instanceof Error && err.message === 'TASK_NOT_FOUND') {
-      res.status(404).json({ error: 'Task definition not found' });
+    if (err instanceof TaskNotFoundError) {
+      res.status(404).json({ error: err.message });
       return;
     }
     throw err;

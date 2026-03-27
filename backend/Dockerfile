@@ -24,7 +24,7 @@ WORKDIR /app
 # Install production dependencies only
 COPY package.json package-lock.json* ./
 RUN npm ci --omit=dev --ignore-scripts
-RUN npm install prisma --no-save
+RUN npm install prisma@^6.9.0 --no-save
 
 # Copy prisma schema and generated client
 COPY prisma ./prisma
