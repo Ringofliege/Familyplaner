@@ -1,4 +1,4 @@
-import { format, subDays, addDays } from 'date-fns';
+import { format, subDays, addDays, parseISO } from 'date-fns';
 
 /** Get today's date as ISO string YYYY-MM-DD */
 export function todayISO(): string {
@@ -16,7 +16,7 @@ export function weekStartISO(): string {
 /** Get end of week (Sunday) as ISO string */
 export function weekEndISO(): string {
   const start = weekStartISO();
-  return format(addDays(new Date(start), 6), 'yyyy-MM-dd');
+  return format(addDays(parseISO(start), 6), 'yyyy-MM-dd');
 }
 
 /** Get day-of-week number (0=Sun, 6=Sat) */

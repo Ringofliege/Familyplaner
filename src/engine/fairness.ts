@@ -86,12 +86,18 @@ export function calculatePoints(task: Task, isHighLoadDay = false): number {
  * and everything else is folded into `household`.
  *
  * @param records Fairness records (should be pre-filtered for one member).
+ * @param memberId Optional member ID for the empty-records case (defaults to first record's memberId).
  * @returns A {@link FairnessScore} with per-category and total points.
  */
-export function calculateFairnessScore(records: FairnessRecord[]): FairnessScore {
+export function calculateFairnessScore(
+  records: FairnessRecord[],
+  memberId?: FamilyMemberId,
+): FairnessScore {
+  const resolvedMemberId = records[0]?.memberId ?? memberId ?? 'mother';
+
   if (records.length === 0) {
     return {
-      memberId: 'mother',
+      memberId: resolvedMemberId,
       childcare: 0,
       household: 0,
       mentalLoad: 0,
@@ -99,8 +105,6 @@ export function calculateFairnessScore(records: FairnessRecord[]): FairnessScore
       total: 0,
     };
   }
-
-  const memberId = records[0].memberId;
   let childcare = 0;
   let household = 0;
   let mentalLoad = 0;
@@ -128,7 +132,7 @@ export function calculateFairnessScore(records: FairnessRecord[]): FairnessScore
   }
 
   return {
-    memberId,
+    memberId: resolvedMemberId,
     childcare,
     household,
     mentalLoad,
@@ -208,8 +212,8 @@ export function getWeeklyFairnessSummary(
   const motherRecords = records.filter((r) => r.memberId === 'mother');
   const fatherRecords = records.filter((r) => r.memberId === 'father');
 
-  const mother = calculateFairnessScore(motherRecords);
-  const father = calculateFairnessScore(fatherRecords);
+  const mother = calculateFairnessScore(motherRecords, 'mother');
+  const father = calculateFairnessScore(fatherRecords, 'father');
 
   return {
     mother,

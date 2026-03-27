@@ -1,8 +1,35 @@
 import { Router } from 'express';
+import { z } from 'zod';
 import prisma from '../db.js';
 import { todayISO, todayDow } from '../utils/dates.js';
 
 export const tasksRouter = Router();
+
+// ---------------------------------------------------------------------------
+// Zod schemas for request validation
+// ---------------------------------------------------------------------------
+
+const createTaskSchema = z.object({
+  title: z.string().min(1, 'title is required'),
+  description: z.string().optional(),
+  type: z.enum(['recurring', 'one-time', 'project', 'mental-load']).default('one-time'),
+  category: z.enum(['childcare', 'household', 'pets', 'food', 'admin', 'personal', 'garden']).default('household'),
+  effort: z.enum(['passive', 'light', 'moderate', 'heavy']).default('light'),
+  durationMinutes: z.number().int().positive().default(15),
+  fairnessPoints: z.number().int().min(0).default(2),
+  assignedTo: z.string().optional(),
+  preferredAssignee: z.string().optional(),
+  recurrence: z.enum(['daily', 'weekday', 'weekly', 'biweekly', 'monthly']).optional(),
+  recurrenceDays: z.array(z.number().int().min(0).max(6)).default([]),
+  preferredStart: z.string().optional(),
+  preferredEnd: z.string().optional(),
+  dependsOn: z.array(z.string()).default([]),
+});
+
+const completeTaskSchema = z.object({
+  completedBy: z.string().min(1, 'completedBy is required'),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+});
 
 // ---------------------------------------------------------------------------
 // GET /api/tasks — all active task definitions
@@ -35,6 +62,7 @@ tasksRouter.get('/today', async (_req, res) => {
         { recurrence: 'weekday', recurrenceDays: { isEmpty: true } },
         { recurrenceDays: { has: dow } },
         // one-time tasks with no recurrence should show up if they have an instance for today
+        { recurrence: null, instances: { some: { date } } },
       ],
     },
     include: {
@@ -79,29 +107,35 @@ tasksRouter.get('/today', async (_req, res) => {
 // POST /api/tasks — create a new task definition
 // ---------------------------------------------------------------------------
 tasksRouter.post('/', async (req, res) => {
+  const parsed = createTaskSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: 'Validation failed', details: parsed.error.flatten() });
+    return;
+  }
+
   const {
     title, description, type, category, effort,
     durationMinutes, fairnessPoints, assignedTo,
     preferredAssignee, recurrence, recurrenceDays,
     preferredStart, preferredEnd, dependsOn,
-  } = req.body;
+  } = parsed.data;
 
   const task = await prisma.taskDefinition.create({
     data: {
       title,
       description,
-      type: type ?? 'one-time',
-      category: category ?? 'household',
-      effort: effort ?? 'light',
-      durationMinutes: durationMinutes ?? 15,
-      fairnessPoints: fairnessPoints ?? 2,
+      type,
+      category,
+      effort,
+      durationMinutes,
+      fairnessPoints,
       assignedToId: assignedTo,
       preferredAssigneeId: preferredAssignee,
       recurrence,
-      recurrenceDays: recurrenceDays ?? [],
+      recurrenceDays,
       preferredStart,
       preferredEnd,
-      dependsOn: dependsOn ?? [],
+      dependsOn,
     },
   });
 
@@ -157,59 +191,84 @@ tasksRouter.delete('/:id', async (req, res) => {
 // ---------------------------------------------------------------------------
 tasksRouter.post('/:id/complete', async (req, res) => {
   const { id } = req.params; // task definition ID
-  const { completedBy, date: dateParam } = req.body;
+  const parsed = completeTaskSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: 'Validation failed', details: parsed.error.flatten() });
+    return;
+  }
+
+  const { completedBy, date: dateParam } = parsed.data;
   const date = dateParam ?? todayISO();
 
-  if (!completedBy) {
-    res.status(400).json({ error: 'completedBy is required' });
-    return;
+  try {
+    // Atomic transaction: upsert instance → upsert completion → upsert fairness record
+    const result = await prisma.$transaction(async (tx) => {
+      // Ensure instance exists
+      const instance = await tx.taskInstance.upsert({
+        where: {
+          taskDefinitionId_date: { taskDefinitionId: id, date },
+        },
+        update: { status: 'completed' },
+        create: {
+          taskDefinitionId: id,
+          date,
+          status: 'completed',
+        },
+      });
+
+      // Get task definition for fairness points
+      const taskDef = await tx.taskDefinition.findUnique({
+        where: { id },
+      });
+
+      if (!taskDef) {
+        throw new Error('TASK_NOT_FOUND');
+      }
+
+      // Create or reuse completion record (idempotent)
+      let completion = await tx.taskCompletion.findUnique({
+        where: { taskInstanceId: instance.id },
+      });
+
+      if (!completion) {
+        completion = await tx.taskCompletion.create({
+          data: {
+            taskInstanceId: instance.id,
+            taskDefinitionId: id,
+            completedById: completedBy,
+            fairnessPoints: taskDef.fairnessPoints,
+          },
+        });
+      }
+
+      // Create or reuse fairness record (idempotent)
+      const existingFairness = await tx.fairnessRecord.findFirst({
+        where: { taskCompletionId: completion.id },
+      });
+
+      if (!existingFairness) {
+        await tx.fairnessRecord.create({
+          data: {
+            date,
+            memberId: completedBy,
+            category: taskDef.category,
+            points: taskDef.fairnessPoints,
+            taskCompletionId: completion.id,
+          },
+        });
+      }
+
+      return { instance, completion };
+    });
+
+    res.json(result);
+  } catch (err) {
+    if (err instanceof Error && err.message === 'TASK_NOT_FOUND') {
+      res.status(404).json({ error: 'Task definition not found' });
+      return;
+    }
+    throw err;
   }
-
-  // Ensure instance exists
-  const instance = await prisma.taskInstance.upsert({
-    where: {
-      taskDefinitionId_date: { taskDefinitionId: id, date },
-    },
-    update: { status: 'completed' },
-    create: {
-      taskDefinitionId: id,
-      date,
-      status: 'completed',
-    },
-  });
-
-  // Get task definition for fairness points
-  const taskDef = await prisma.taskDefinition.findUnique({
-    where: { id },
-  });
-
-  if (!taskDef) {
-    res.status(404).json({ error: 'Task definition not found' });
-    return;
-  }
-
-  // Create completion record
-  const completion = await prisma.taskCompletion.create({
-    data: {
-      taskInstanceId: instance.id,
-      taskDefinitionId: id,
-      completedById: completedBy,
-      fairnessPoints: taskDef.fairnessPoints,
-    },
-  });
-
-  // Create fairness record
-  await prisma.fairnessRecord.create({
-    data: {
-      date,
-      memberId: completedBy,
-      category: taskDef.category,
-      points: taskDef.fairnessPoints,
-      taskCompletionId: completion.id,
-    },
-  });
-
-  res.json({ instance, completion });
 });
 
 // ---------------------------------------------------------------------------

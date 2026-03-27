@@ -67,7 +67,7 @@ function familyReducer(state: FamilyState, action: FamilyAction): FamilyState {
       if (!task) return state;
 
       const newRecord: FairnessRecord = {
-        date: action.date,
+        date: action.date.slice(0, 10), // date-only YYYY-MM-DD
         taskId: action.taskId,
         memberId: action.completedBy,
         category: task.category,
@@ -167,7 +167,12 @@ function familyReducer(state: FamilyState, action: FamilyAction): FamilyState {
             ...(action.chargeLevel !== undefined && { chargeLevel: action.chargeLevel }),
             ...(action.isAvailable !== undefined && { isAvailable: action.isAvailable }),
           },
-          status: action.isAvailable === false ? 'in-use' : state.carResource.status,
+          status:
+            action.isAvailable === false
+              ? 'in-use'
+              : action.isAvailable === true
+                ? 'available'
+                : state.carResource.status,
         },
       };
 
