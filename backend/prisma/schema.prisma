@@ -1,0 +1,279 @@
+// FamilyOS PostgreSQL Schema
+// Key design decisions:
+// 1. task_definitions (what) → task_instances (when) → task_completions (who/result)
+// 2. Fairness points stored per completion for historical tracking
+// 3. Recurring rules stored on definitions, instances generated per day
+// 4. All timestamps in UTC
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Family members
+// ---------------------------------------------------------------------------
+
+model FamilyMember {
+  id    String @id // 'mother' | 'father'
+  name  String // 'Mama' | 'Papa'
+  color String // hex color for UI
+
+  // Relations
+  assignedTasks    TaskDefinition[]  @relation("AssignedTo")
+  preferredTasks   TaskDefinition[]  @relation("PreferredAssignee")
+  taskCompletions  TaskCompletion[]
+  fairnessRecords  FairnessRecord[]
+  mealAssignments  MealPlanEntry[]
+  thankYousSent    ThankYou[]        @relation("ThankYouFrom")
+  thankYousReceived ThankYou[]       @relation("ThankYouTo")
+  takeOversFrom    TakeOver[]        @relation("TakeOverFrom")
+  takeOversTo      TakeOver[]        @relation("TakeOverTo")
+  ownedEvents      CalendarEvent[]
+  stressActivations StressMode[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ---------------------------------------------------------------------------
+// Task definitions (the "what" — reusable templates)
+// ---------------------------------------------------------------------------
+
+model TaskDefinition {
+  id               String   @id @default(cuid())
+  title            String
+  description      String?
+  type             String   // 'recurring' | 'one-time' | 'project' | 'mental-load'
+  category         String   // 'childcare' | 'household' | 'pets' | 'food' | 'admin' | 'personal' | 'garden'
+  effort           String   // 'passive' | 'light' | 'moderate' | 'heavy'
+  durationMinutes  Int
+  fairnessPoints   Int      // pre-calculated base points
+
+  // Assignment
+  assignedToId       String?       @map("assigned_to")
+  assignedTo         FamilyMember? @relation("AssignedTo", fields: [assignedToId], references: [id])
+  preferredAssigneeId String?      @map("preferred_assignee")
+  preferredAssignee  FamilyMember? @relation("PreferredAssignee", fields: [preferredAssigneeId], references: [id])
+
+  // Recurrence
+  recurrence       String?  // 'daily' | 'weekday' | 'weekly' | 'biweekly' | 'monthly' | null
+  recurrenceDays   Int[]    // [0-6] day-of-week array, empty = all applicable days
+
+  // Time preferences
+  preferredStart   String?  // HH:MM
+  preferredEnd     String?  // HH:MM
+
+  // Dependencies
+  dependsOn        String[] // task definition IDs
+
+  // Metadata
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Relations
+  instances        TaskInstance[]
+  completions      TaskCompletion[]
+  thankYous        ThankYou[]
+  takeOvers        TakeOver[]
+
+  @@index([category])
+  @@index([type])
+  @@index([isActive])
+}
+
+// ---------------------------------------------------------------------------
+// Task instances (the "when" — a specific occurrence on a specific date)
+// ---------------------------------------------------------------------------
+
+model TaskInstance {
+  id               String   @id @default(cuid())
+  taskDefinitionId String   @map("task_definition_id")
+  taskDefinition   TaskDefinition @relation(fields: [taskDefinitionId], references: [id], onDelete: Cascade)
+
+  date             String   // ISO date 'YYYY-MM-DD'
+  status           String   @default("pending") // 'pending' | 'completed' | 'skipped'
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Relations
+  completion       TaskCompletion?
+
+  @@unique([taskDefinitionId, date])
+  @@index([date])
+  @@index([status])
+}
+
+// ---------------------------------------------------------------------------
+// Task completions (the "who/result" — tracks who did it)
+// ---------------------------------------------------------------------------
+
+model TaskCompletion {
+  id               String   @id @default(cuid())
+
+  taskInstanceId   String   @unique @map("task_instance_id")
+  taskInstance     TaskInstance @relation(fields: [taskInstanceId], references: [id], onDelete: Cascade)
+
+  taskDefinitionId String   @map("task_definition_id")
+  taskDefinition   TaskDefinition @relation(fields: [taskDefinitionId], references: [id])
+
+  completedById    String   @map("completed_by")
+  completedBy      FamilyMember @relation(fields: [completedById], references: [id])
+
+  completedAt      DateTime @default(now())
+  fairnessPoints   Int      // points awarded for this specific completion
+
+  @@index([completedById])
+  @@index([completedAt])
+  @@index([taskDefinitionId])
+}
+
+// ---------------------------------------------------------------------------
+// Fairness records (aggregatable scoring history)
+// ---------------------------------------------------------------------------
+
+model FairnessRecord {
+  id        String   @id @default(cuid())
+  date      String   // ISO date
+  memberId  String   @map("member_id")
+  member    FamilyMember @relation(fields: [memberId], references: [id])
+  category  String   // task category at time of completion
+  points    Int      // points awarded
+
+  taskCompletionId String? @map("task_completion_id")
+
+  createdAt DateTime @default(now())
+
+  @@index([memberId, date])
+  @@index([date])
+}
+
+// ---------------------------------------------------------------------------
+// Calendar events (fixed schedule entries)
+// ---------------------------------------------------------------------------
+
+model CalendarEvent {
+  id          String  @id @default(cuid())
+  title       String
+  dayOfWeek   Int     @map("day_of_week") // 0=Sun, 6=Sat
+  startTime   String  @map("start_time")  // HH:MM
+  endTime     String  @map("end_time")    // HH:MM
+  ownerId     String? @map("owner_id")
+  owner       FamilyMember? @relation(fields: [ownerId], references: [id])
+  ownerType   String  @default("member") @map("owner_type") // 'member' | 'family' | 'household'
+  isRecurring Boolean @default(true)
+  color       String?
+  type        String  // 'work' | 'childcare' | 'activity' | 'household' | 'personal'
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([dayOfWeek])
+}
+
+// ---------------------------------------------------------------------------
+// Meals
+// ---------------------------------------------------------------------------
+
+model Meal {
+  id              String   @id @default(cuid())
+  name            String
+  difficulty      String   // 'easy' | 'medium' | 'complex'
+  prepTimeMinutes Int      @map("prep_time_minutes")
+  cookTimeMinutes Int      @map("cook_time_minutes")
+  servings        Int
+  tags            String[]
+  ingredients     String[]
+  cookidooId      String?  @map("cookidoo_id")
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  mealPlanEntries MealPlanEntry[]
+}
+
+model MealPlanEntry {
+  id         String   @id @default(cuid())
+  date       String   // ISO date
+  mealType   String   @map("meal_type") // 'breakfast' | 'lunch' | 'dinner' | 'snack'
+  mealId     String?  @map("meal_id")
+  meal       Meal?    @relation(fields: [mealId], references: [id])
+  assignedToId String? @map("assigned_to")
+  assignedTo FamilyMember? @relation(fields: [assignedToId], references: [id])
+  notes      String?
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([date, mealType])
+  @@index([date])
+}
+
+// ---------------------------------------------------------------------------
+// Resources (car, etc.)
+// ---------------------------------------------------------------------------
+
+model Resource {
+  id       String @id @default(cuid())
+  type     String // 'car' | 'cash'
+  name     String
+  status   String @default("available") // 'available' | 'in-use' | 'needs-attention'
+  metadata Json   @default("{}")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ---------------------------------------------------------------------------
+// Interactions
+// ---------------------------------------------------------------------------
+
+model ThankYou {
+  id      String @id @default(cuid())
+  fromId  String @map("from_id")
+  from    FamilyMember @relation("ThankYouFrom", fields: [fromId], references: [id])
+  toId    String @map("to_id")
+  to      FamilyMember @relation("ThankYouTo", fields: [toId], references: [id])
+  taskId  String? @map("task_id")
+  task    TaskDefinition? @relation(fields: [taskId], references: [id])
+  message String?
+  date    DateTime @default(now())
+
+  @@index([date])
+}
+
+model TakeOver {
+  id     String @id @default(cuid())
+  taskId String @map("task_id")
+  task   TaskDefinition @relation(fields: [taskId], references: [id])
+  fromId String @map("from_id")
+  from   FamilyMember @relation("TakeOverFrom", fields: [fromId], references: [id])
+  toId   String @map("to_id")
+  to     FamilyMember @relation("TakeOverTo", fields: [toId], references: [id])
+  date   DateTime @default(now())
+
+  @@index([date])
+}
+
+// ---------------------------------------------------------------------------
+// Stress mode
+// ---------------------------------------------------------------------------
+
+model StressMode {
+  id           String   @id @default(cuid())
+  active       Boolean  @default(true)
+  activatedById String  @map("activated_by")
+  activatedBy  FamilyMember @relation(fields: [activatedById], references: [id])
+  reason       String?
+  startDate    DateTime @default(now())
+  endDate      DateTime?
+
+  @@index([active])
+}
