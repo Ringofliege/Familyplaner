@@ -7,6 +7,7 @@ import { CalendarPage } from './pages/Calendar';
 import { TasksPage } from './pages/Tasks';
 import { MealsPage } from './pages/Meals';
 import { FamilyPage } from './pages/Family';
+import { AdminPage } from './pages/Admin';
 
 export function App() {
   const {
@@ -21,18 +22,21 @@ export function App() {
     sendThankYou,
     takeOverTask,
     switchUser,
+    addShopItem,
+    deleteShopItem,
+    redeemShopItem,
   } = useFamilyState();
 
   return (
     <BrowserRouter>
-      <div className="flex flex-col min-h-[100dvh] bg-slate-50">
+      <div className="app-shell flex min-h-[100dvh] flex-col bg-transparent">
         <Header
           currentUser={state.currentUser}
           onSwitchUser={switchUser}
           stressMode={state.stressMode.active}
         />
 
-        <main className="flex-1 overflow-y-auto pb-20">
+        <main className="relative z-10 flex-1 overflow-y-auto pb-24">
           <Routes>
             <Route
               path="/"
@@ -81,6 +85,20 @@ export function App() {
                   state={state}
                   toggleStressMode={toggleStressMode}
                   switchUser={switchUser}
+                />
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <AdminPage
+                  state={state}
+                  addTask={addTask}
+                  updateTask={updateTask}
+                  deleteTask={deleteTask}
+                  addShopItem={addShopItem}
+                  deleteShopItem={deleteShopItem}
+                  redeemShopItem={redeemShopItem}
                 />
               }
             />

@@ -60,6 +60,26 @@ export interface Task {
   dueDate?: string;
 }
 
+export type ShopItemTheme = 'pink' | 'blue' | 'purple' | 'green' | 'yellow';
+
+export interface ShopItem {
+  id: string;
+  name: string;
+  description?: string;
+  cost: number;
+  icon: string;
+  theme: ShopItemTheme;
+  featured?: boolean;
+}
+
+export interface ShopRedemption {
+  id: string;
+  shopItemId: string;
+  memberId: FamilyMemberId;
+  cost: number;
+  redeemedAt: string;
+}
+
 // Fairness
 export interface FairnessScore {
   memberId: FamilyMemberId;
