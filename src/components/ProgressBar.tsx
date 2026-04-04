@@ -12,23 +12,26 @@ export function ProgressBar({ motherValue, fatherValue, label }: ProgressBarProp
   return (
     <div className="w-full">
       {label && (
-        <p className="text-sm font-medium text-slate-700 mb-1">{label}</p>
+        <div className="mb-2 flex items-center justify-between">
+          <p className="text-sm font-semibold text-slate-700">{label}</p>
+          <p className="text-xs text-slate-400">{motherValue + fatherValue} Punkte</p>
+        </div>
       )}
-      <div className="flex items-center gap-2">
-        <span className="text-xs font-medium text-pink-600 w-9 text-right">
+      <div className="flex items-center gap-3">
+        <span className="w-10 text-right text-xs font-semibold text-pink-600">
           {motherPct}%
         </span>
-        <div className="flex-1 h-3 rounded-full overflow-hidden flex bg-slate-100">
+        <div className="progress-shimmer glass-panel flex h-4 flex-1 overflow-hidden rounded-full bg-slate-100/70">
           <div
-            className="bg-pink-500 transition-all duration-300"
+            className="bg-gradient-to-r from-pink-400 via-pink-500 to-fuchsia-500 transition-all duration-500"
             style={{ width: `${motherPct}%` }}
           />
           <div
-            className="bg-blue-500 transition-all duration-300"
+            className="bg-gradient-to-r from-sky-400 via-blue-500 to-indigo-500 transition-all duration-500"
             style={{ width: `${fatherPct}%` }}
           />
         </div>
-        <span className="text-xs font-medium text-blue-600 w-9">
+        <span className="w-10 text-xs font-semibold text-blue-600">
           {fatherPct}%
         </span>
       </div>

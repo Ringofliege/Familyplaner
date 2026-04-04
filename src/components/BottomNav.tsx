@@ -14,8 +14,8 @@ export function BottomNav() {
   const navigate = useNavigate();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 pb-[env(safe-area-inset-bottom)]">
-      <div className="flex items-center justify-around h-14">
+    <nav className="fixed bottom-0 left-0 right-0 z-30 px-4 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
+      <div className="glass-panel mx-auto flex h-18 max-w-xl items-center justify-around rounded-[28px] border border-white/70 px-2 shadow-[0_28px_65px_-36px_rgba(15,23,42,0.55)]">
         {tabs.map(({ path, label, icon: Icon }) => {
           const isActive = location.pathname === path;
 
@@ -23,14 +23,16 @@ export function BottomNav() {
             <button
               key={path}
               onClick={() => navigate(path)}
-              className={`flex flex-col items-center justify-center min-w-[44px] min-h-[44px] gap-0.5 transition-colors ${
-                isActive ? 'text-blue-600' : 'text-slate-400'
+              className={`flex min-h-[56px] min-w-[58px] flex-col items-center justify-center gap-1 rounded-2xl px-3 transition-all ${
+                isActive
+                  ? 'bg-gradient-to-br from-indigo-500 via-violet-500 to-pink-500 text-white shadow-lg shadow-indigo-500/25'
+                  : 'text-slate-400 hover:bg-white/60 hover:text-slate-700'
               }`}
               aria-label={label}
               aria-current={isActive ? 'page' : undefined}
             >
-              <Icon className="w-5 h-5" />
-              <span className="text-[10px] font-medium">{label}</span>
+              <Icon className={`h-5 w-5 ${isActive ? 'scale-110' : ''}`} />
+              <span className="text-[10px] font-semibold tracking-wide">{label}</span>
             </button>
           );
         })}
