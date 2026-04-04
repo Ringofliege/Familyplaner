@@ -139,15 +139,6 @@ export function TodayPage({
     }
   }
 
-  const bringTask = todayView.todayTasks.find((t) => t.title.toLowerCase().includes('bring'));
-  const pickupTask = todayView.todayTasks.find((t) => t.title.toLowerCase().includes('abhol'));
-  const bringPerson = bringTask
-    ? memberName[todayView.responsibilities.get(bringTask.id) ?? bringTask.assignedTo ?? 'father']
-    : null;
-  const pickupPerson = pickupTask
-    ? memberName[todayView.responsibilities.get(pickupTask.id) ?? pickupTask.assignedTo ?? 'mother']
-    : null;
-
   const visibleSuggestions = todayView.suggestions.filter(
     (s) => !s.dismissed && !dismissedSuggestions.has(s.id),
   );
@@ -215,14 +206,16 @@ export function TodayPage({
           </div>
 
           <div className="mt-5 flex flex-wrap items-center gap-2 text-xs text-white/70">
-            {bringPerson && (
-              <span className="rounded-full bg-white/10 px-3 py-1.5">🚗 Bringen: {bringPerson}</span>
-            )}
-            {pickupPerson && (
-              <span className="rounded-full bg-white/10 px-3 py-1.5">🏫 Abholen: {pickupPerson}</span>
-            )}
             <span className="rounded-full bg-white/10 px-3 py-1.5">
               {memberName[otherUser]} hat {otherTasks.length} offene Tasks
+            </span>
+            <span className="rounded-full bg-white/10 px-3 py-1.5">
+              {visibleSuggestions.length > 0
+                ? `${visibleSuggestions.length} smarte Hinweise aktiv`
+                : 'keine kritischen Hinweise'}
+            </span>
+            <span className="rounded-full bg-white/10 px-3 py-1.5">
+              {currentFreePercent >= 50 ? 'guter Spielraum heute' : 'heute eher eng geplant'}
             </span>
           </div>
         </div>
@@ -272,7 +265,7 @@ export function TodayPage({
           </p>
           <p className="mt-1 text-xs text-slate-400">
             {state.stressMode.active
-              ? `aktiviert von ${memberName[state.stressMode.activatedBy ?? currentUser]}`
+              ? `aktiviert von ${state.stressMode.activatedBy ? memberName[state.stressMode.activatedBy] : 'unbekannt'}`
               : 'aktuell normale Priorisierung'}
           </p>
         </Card>

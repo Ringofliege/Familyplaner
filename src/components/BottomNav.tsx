@@ -14,8 +14,11 @@ export function BottomNav() {
   const navigate = useNavigate();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-30 px-4 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
-      <div className="glass-panel mx-auto flex h-18 max-w-xl items-center justify-around rounded-[28px] border border-white/70 px-2 shadow-[0_28px_65px_-36px_rgba(15,23,42,0.55)]">
+    <nav
+      className="fixed bottom-0 left-0 right-0 z-30 px-4 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]"
+      aria-label="Hauptnavigation"
+    >
+      <div className="glass-panel mx-auto flex h-[4.5rem] max-w-xl items-center justify-around rounded-[28px] border border-white/70 px-2 shadow-[0_28px_65px_-36px_rgba(15,23,42,0.55)]">
         {tabs.map(({ path, label, icon: Icon }) => {
           const isActive = location.pathname === path;
 
@@ -33,6 +36,12 @@ export function BottomNav() {
             >
               <Icon className={`h-5 w-5 ${isActive ? 'scale-110' : ''}`} />
               <span className="text-[10px] font-semibold tracking-wide">{label}</span>
+              <span
+                className={`h-1.5 w-6 rounded-full transition-all ${
+                  isActive ? 'bg-white/90' : 'bg-transparent'
+                }`}
+                aria-hidden="true"
+              />
             </button>
           );
         })}

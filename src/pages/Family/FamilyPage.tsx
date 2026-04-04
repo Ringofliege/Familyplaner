@@ -30,7 +30,7 @@ const memberName: Record<FamilyMemberId, string> = {
 };
 
 const productOpportunities = [
-  'Suche und tiefere Filter für Aufgaben, Meals und Historie fehlen aktuell.',
+  'Suche und erweiterte Filter für Aufgaben, Meals und Historie fehlen aktuell.',
   'Stress-Modus nutzt noch keinen Grund und keine adaptive Timeline-Ansicht.',
   'Es gibt keine Verlaufscharts für Fairness, Completion-Rate oder Wochenvergleiche.',
   'Meal Planning hat noch keine Einkaufsliste, keine eigenen Rezepte und keine Portionierung.',
@@ -330,7 +330,7 @@ export function FamilyPage({ state, toggleStressMode, switchUser }: FamilyPagePr
                   Stress-Modus
                 </p>
                 <p className={`mt-1 text-xs ${state.stressMode.active ? 'text-slate-500' : 'text-white/70'}`}>
-                  {state.stressMode.active ? 'Aktiviert für schnelle Entlastung' : 'Aktiviere bei Bedarf einen simpleren Tagesmodus'}
+                  {state.stressMode.active ? 'Aktiviert für schnelle Entlastung' : 'Aktiviere bei Bedarf einen einfacheren Tagesmodus'}
                 </p>
               </div>
               <div

@@ -9,19 +9,20 @@ interface HeaderProps {
   stressMode: boolean;
 }
 
+const pageMeta: Record<string, { title: string; subtitle: string }> = {
+  '/': { title: 'Heute im Fokus', subtitle: 'Live-Überblick für Aufgaben, Energie und Balance' },
+  '/calendar': { title: 'Familienkalender', subtitle: 'Alle Wege, Termine und Übergaben in einer Sicht' },
+  '/tasks': { title: 'Aufgabenboard', subtitle: 'Prioritäten, Ownership und Fairness auf einen Blick' },
+  '/meals': { title: 'Meal Flow', subtitle: 'Essensplanung mit mehr Überblick und weniger Stress' },
+  '/family': { title: 'Familienstatus', subtitle: 'Fairness, Ressourcen und Wochenrückblick' },
+};
+
 export function Header({ currentUser, onSwitchUser, stressMode }: HeaderProps) {
   const location = useLocation();
   const toggleUser = () => {
     onSwitchUser(currentUser === 'mother' ? 'father' : 'mother');
   };
   const isMother = currentUser === 'mother';
-  const pageMeta: Record<string, { title: string; subtitle: string }> = {
-    '/': { title: 'Heute im Fokus', subtitle: 'Live-Überblick für Aufgaben, Energie und Balance' },
-    '/calendar': { title: 'Familienkalender', subtitle: 'Alle Wege, Termine und Übergaben in einer Sicht' },
-    '/tasks': { title: 'Aufgabenboard', subtitle: 'Prioritäten, Ownership und Fairness auf einen Blick' },
-    '/meals': { title: 'Meal Flow', subtitle: 'Essensplanung mit mehr Überblick und weniger Stress' },
-    '/family': { title: 'Familienstatus', subtitle: 'Fairness, Ressourcen und Wochenrückblick' },
-  };
   const currentMeta = pageMeta[location.pathname] ?? pageMeta['/'];
 
   return (
@@ -53,7 +54,7 @@ export function Header({ currentUser, onSwitchUser, stressMode }: HeaderProps) {
               </span>
               {stressMode && (
                 <span
-                  className="inline-flex animate-pulse items-center gap-1 rounded-full bg-yellow-100 text-yellow-700 px-3 py-1 text-xs font-semibold"
+                  className="inline-flex items-center gap-1 rounded-full bg-yellow-100 text-yellow-700 px-3 py-1 text-xs font-semibold"
                   title="Stress-Modus aktiv"
                 >
                   <Zap className="h-3.5 w-3.5" />
