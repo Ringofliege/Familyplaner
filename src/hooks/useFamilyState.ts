@@ -8,9 +8,12 @@ import type {
   TakeOver,
   FamilyMemberId,
   CarResource,
+  ShopItem,
+  ShopRedemption,
 } from '../models/types';
 import { recurringTasks } from '../data/tasks';
 import { carResource as defaultCarResource } from '../data/resources';
+import { defaultShopItems } from '../data/shop';
 
 // ---------------------------------------------------------------------------
 // State
@@ -25,6 +28,9 @@ export interface FamilyState {
   takeOvers: TakeOver[];
   carResource: CarResource;
   currentUser: FamilyMemberId;
+  rewardPoints: Record<FamilyMemberId, number>;
+  shopItems: ShopItem[];
+  shopRedemptions: ShopRedemption[];
 }
 
 const initialState: FamilyState = {
@@ -36,6 +42,12 @@ const initialState: FamilyState = {
   takeOvers: [],
   carResource: { ...defaultCarResource, metadata: { ...defaultCarResource.metadata } },
   currentUser: 'mother',
+  rewardPoints: {
+    mother: 0,
+    father: 0,
+  },
+  shopItems: defaultShopItems.map((item) => ({ ...item })),
+  shopRedemptions: [],
 };
 
 // ---------------------------------------------------------------------------
@@ -54,6 +66,9 @@ type FamilyAction =
   | { type: 'TAKE_OVER_TASK'; taskId: string; from: FamilyMemberId; to: FamilyMemberId }
   | { type: 'UPDATE_CAR'; chargeLevel?: number; isAvailable?: boolean }
   | { type: 'SWITCH_USER'; memberId: FamilyMemberId }
+  | { type: 'ADD_SHOP_ITEM'; item: ShopItem }
+  | { type: 'DELETE_SHOP_ITEM'; itemId: string }
+  | { type: 'REDEEM_SHOP_ITEM'; memberId: FamilyMemberId; itemId: string }
   | { type: 'RESET_WEEKLY' };
 
 // ---------------------------------------------------------------------------
@@ -82,6 +97,11 @@ function familyReducer(state: FamilyState, action: FamilyAction): FamilyState {
             : t,
         ),
         fairnessRecords: [...state.fairnessRecords, newRecord],
+        rewardPoints: {
+          ...state.rewardPoints,
+          [action.completedBy]:
+            state.rewardPoints[action.completedBy] + task.fairnessPoints,
+        },
       };
     }
 
@@ -179,6 +199,39 @@ function familyReducer(state: FamilyState, action: FamilyAction): FamilyState {
     case 'SWITCH_USER':
       return { ...state, currentUser: action.memberId };
 
+    case 'ADD_SHOP_ITEM':
+      return { ...state, shopItems: [action.item, ...state.shopItems] };
+
+    case 'DELETE_SHOP_ITEM':
+      return {
+        ...state,
+        shopItems: state.shopItems.filter((item) => item.id !== action.itemId),
+      };
+
+    case 'REDEEM_SHOP_ITEM': {
+      const item = state.shopItems.find((entry) => entry.id === action.itemId);
+      if (!item) return state;
+      const currentPoints = state.rewardPoints[action.memberId];
+      if (currentPoints < item.cost) return state;
+
+      const redemption: ShopRedemption = {
+        id: `reward-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        shopItemId: item.id,
+        memberId: action.memberId,
+        cost: item.cost,
+        redeemedAt: new Date().toISOString(),
+      };
+
+      return {
+        ...state,
+        rewardPoints: {
+          ...state.rewardPoints,
+          [action.memberId]: currentPoints - item.cost,
+        },
+        shopRedemptions: [redemption, ...state.shopRedemptions],
+      };
+    }
+
     case 'RESET_WEEKLY':
       return {
         ...state,
@@ -262,6 +315,22 @@ export function useFamilyState() {
     [],
   );
 
+  const addShopItem = useCallback(
+    (item: ShopItem) => dispatch({ type: 'ADD_SHOP_ITEM', item }),
+    [],
+  );
+
+  const deleteShopItem = useCallback(
+    (itemId: string) => dispatch({ type: 'DELETE_SHOP_ITEM', itemId }),
+    [],
+  );
+
+  const redeemShopItem = useCallback(
+    (itemId: string, memberId: FamilyMemberId) =>
+      dispatch({ type: 'REDEEM_SHOP_ITEM', itemId, memberId }),
+    [],
+  );
+
   return useMemo(
     () => ({
       state,
@@ -276,6 +345,9 @@ export function useFamilyState() {
       takeOverTask,
       updateCar,
       switchUser,
+      addShopItem,
+      deleteShopItem,
+      redeemShopItem,
     }),
     [
       state,
@@ -290,6 +362,9 @@ export function useFamilyState() {
       takeOverTask,
       updateCar,
       switchUser,
+      addShopItem,
+      deleteShopItem,
+      redeemShopItem,
     ],
   );
 }

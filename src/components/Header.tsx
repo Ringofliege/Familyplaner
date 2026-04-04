@@ -15,6 +15,7 @@ const pageMeta: Record<string, { title: string; subtitle: string }> = {
   '/tasks': { title: 'Aufgabenboard', subtitle: 'Prioritäten, Ownership und Fairness auf einen Blick' },
   '/meals': { title: 'Meal Flow', subtitle: 'Essensplanung mit mehr Überblick und weniger Stress' },
   '/family': { title: 'Familienstatus', subtitle: 'Fairness, Ressourcen und Wochenrückblick' },
+  '/admin': { title: 'Admin & Store', subtitle: 'Punkte, Aufgaben und Rewards elegant steuern' },
 };
 
 export function Header({ currentUser, onSwitchUser, stressMode }: HeaderProps) {

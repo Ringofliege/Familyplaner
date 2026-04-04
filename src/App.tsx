@@ -7,6 +7,7 @@ import { CalendarPage } from './pages/Calendar';
 import { TasksPage } from './pages/Tasks';
 import { MealsPage } from './pages/Meals';
 import { FamilyPage } from './pages/Family';
+import { AdminPage } from './pages/Admin';
 
 export function App() {
   const {
@@ -21,6 +22,9 @@ export function App() {
     sendThankYou,
     takeOverTask,
     switchUser,
+    addShopItem,
+    deleteShopItem,
+    redeemShopItem,
   } = useFamilyState();
 
   return (
@@ -81,6 +85,20 @@ export function App() {
                   state={state}
                   toggleStressMode={toggleStressMode}
                   switchUser={switchUser}
+                />
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <AdminPage
+                  state={state}
+                  addTask={addTask}
+                  updateTask={updateTask}
+                  deleteTask={deleteTask}
+                  addShopItem={addShopItem}
+                  deleteShopItem={deleteShopItem}
+                  redeemShopItem={redeemShopItem}
                 />
               }
             />
