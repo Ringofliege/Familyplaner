@@ -265,7 +265,7 @@ export function TodayPage({
           </p>
           <p className="mt-1 text-xs text-slate-400">
             {state.stressMode.active
-              ? `aktiviert von ${state.stressMode.activatedBy ? memberName[state.stressMode.activatedBy] : 'unbekannt'}`
+              ? `aktiviert von ${state.stressMode.activatedBy ? memberName[state.stressMode.activatedBy] : 'Unbekannt'}`
               : 'aktuell normale Priorisierung'}
           </p>
         </Card>

@@ -50,21 +50,27 @@ export function TaskCard({
 }: TaskCardProps) {
   const member = assignedTo ?? task.assignedTo;
   const dots = effortDots[task.effort];
+  const dueDateLabel = (() => {
+    if (!task.dueDate) return null;
+    const dueDate = new Date(task.dueDate);
+    if (Number.isNaN(dueDate.getTime())) return null;
+    return `Fällig ${dueDate.toLocaleDateString('de-DE', {
+      day: '2-digit',
+      month: '2-digit',
+    })}`;
+  })();
   const metaItems = [
     {
       key: 'duration',
       icon: Clock,
       label: `${task.durationMinutes} Min.`,
     },
-    ...(task.dueDate
+    ...(dueDateLabel
       ? [
           {
             key: 'dueDate',
             icon: CalendarClock,
-            label: `Fällig ${new Date(task.dueDate).toLocaleDateString('de-DE', {
-              day: '2-digit',
-              month: '2-digit',
-            })}`,
+            label: dueDateLabel,
           },
         ]
       : []),

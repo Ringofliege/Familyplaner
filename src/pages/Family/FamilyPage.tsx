@@ -36,6 +36,25 @@ const productOpportunities = [
   'Meal Planning hat noch keine Einkaufsliste, keine eigenen Rezepte und keine Portionierung.',
 ];
 
+function getChargeStyles(chargeLevel: number) {
+  if (chargeLevel < 30) {
+    return {
+      color: 'text-red-600',
+      gradient: 'from-red-400 to-red-500',
+    };
+  }
+  if (chargeLevel < 60) {
+    return {
+      color: 'text-yellow-600',
+      gradient: 'from-yellow-400 to-orange-500',
+    };
+  }
+  return {
+    color: 'text-green-600',
+    gradient: 'from-emerald-400 to-green-500',
+  };
+}
+
 export function FamilyPage({ state, toggleStressMode, switchUser }: FamilyPageProps) {
   const motherRecords = useMemo(
     () => state.fairnessRecords.filter((r) => r.memberId === 'mother'),
@@ -63,10 +82,7 @@ export function FamilyPage({ state, toggleStressMode, switchUser }: FamilyPagePr
   const openTasks = state.tasks.filter((task) => !task.completed).length;
 
   const chargeLevel = state.carResource.metadata.chargeLevel;
-  const chargeColor =
-    chargeLevel < 30 ? 'text-red-600' : chargeLevel < 60 ? 'text-yellow-600' : 'text-green-600';
-  const chargeBg =
-    chargeLevel < 30 ? 'from-red-400 to-red-500' : chargeLevel < 60 ? 'from-yellow-400 to-orange-500' : 'from-emerald-400 to-green-500';
+  const chargeStyles = getChargeStyles(chargeLevel);
 
   const needsChargeDays = state.carResource.metadata.needsChargeBefore;
   const DAY_NAMES = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
@@ -252,24 +268,24 @@ export function FamilyPage({ state, toggleStressMode, switchUser }: FamilyPagePr
                 <h3 className="text-sm font-semibold text-slate-700">Ressourcen</h3>
                 <p className="text-xs text-slate-400">Fahrbereitschaft und kritische Tage</p>
               </div>
-              <Battery className={`h-4 w-4 ${chargeColor}`} />
+              <Battery className={`h-4 w-4 ${chargeStyles.color}`} />
             </div>
             <Card>
               <div className="flex items-start gap-3">
-                <div className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${chargeBg} text-white shadow-lg`}>
+                <div className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${chargeStyles.gradient} text-white shadow-lg`}>
                   <Battery className="h-6 w-6" />
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-semibold text-slate-900">{state.carResource.name}</p>
                   <div className="mt-3 h-3 overflow-hidden rounded-full bg-slate-100">
                     <div
-                      className={`progress-shimmer h-full rounded-full bg-gradient-to-r ${chargeBg}`}
+                      className={`progress-shimmer h-full rounded-full bg-gradient-to-r ${chargeStyles.gradient}`}
                       style={{ width: `${chargeLevel}%` }}
                     />
                   </div>
                   <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
                     <span>Ladestand</span>
-                    <span className={`font-semibold ${chargeColor}`}>{chargeLevel}%</span>
+                    <span className={`font-semibold ${chargeStyles.color}`}>{chargeLevel}%</span>
                   </div>
                   {needsChargeDays.length > 0 && (
                     <p className="mt-3 text-xs text-slate-500">Laden vor: {chargeDayLabels}</p>

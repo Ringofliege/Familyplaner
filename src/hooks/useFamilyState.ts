@@ -14,6 +14,7 @@ import type {
 import { recurringTasks } from '../data/tasks';
 import { carResource as defaultCarResource } from '../data/resources';
 import { defaultShopItems } from '../data/shop';
+import { generateId } from '../utils/generateId';
 
 // ---------------------------------------------------------------------------
 // State
@@ -150,7 +151,7 @@ function familyReducer(state: FamilyState, action: FamilyAction): FamilyState {
 
     case 'SEND_THANK_YOU': {
       const thankYou: ThankYou = {
-        id: `ty-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        id: generateId('ty'),
         from: action.from,
         to: action.to,
         taskId: action.taskId,
@@ -162,7 +163,7 @@ function familyReducer(state: FamilyState, action: FamilyAction): FamilyState {
 
     case 'TAKE_OVER_TASK': {
       const takeOver: TakeOver = {
-        id: `to-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        id: generateId('to'),
         taskId: action.taskId,
         from: action.from,
         to: action.to,
@@ -210,12 +211,20 @@ function familyReducer(state: FamilyState, action: FamilyAction): FamilyState {
 
     case 'REDEEM_SHOP_ITEM': {
       const item = state.shopItems.find((entry) => entry.id === action.itemId);
-      if (!item) return state;
+      if (!item) {
+        console.warn(`Reward item ${action.itemId} was not found.`);
+        return state;
+      }
       const currentPoints = state.rewardPoints[action.memberId];
-      if (currentPoints < item.cost) return state;
+      if (currentPoints < item.cost) {
+        console.warn(
+          `${action.memberId} tried to redeem ${item.id} without enough points.`,
+        );
+        return state;
+      }
 
       const redemption: ShopRedemption = {
-        id: `reward-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        id: generateId('reward'),
         shopItemId: item.id,
         memberId: action.memberId,
         cost: item.cost,

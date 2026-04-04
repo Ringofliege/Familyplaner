@@ -23,6 +23,7 @@ import type { FamilyState } from '../../hooks/useFamilyState';
 import { calculatePoints } from '../../engine/fairness';
 import { familyMembers } from '../../data/family';
 import { Avatar, Badge, Card, EmptyState } from '../../components';
+import { generateId } from '../../utils/generateId';
 
 interface AdminPageProps {
   state: FamilyState;
@@ -96,6 +97,8 @@ const REWARD_FORM_DEFAULTS: RewardFormState = {
   theme: 'purple',
 };
 
+const FEATURED_REWARD_COST_THRESHOLD = 40;
+
 const themeClasses: Record<
   ShopItemTheme,
   { card: string; badge: 'pink' | 'blue' | 'purple' | 'green' | 'yellow' }
@@ -128,7 +131,7 @@ const inputClassName =
 function buildTaskFromForm(form: TaskFormState, suggestedPoints: number): Task {
   const customPoints = Number(form.fairnessPoints);
   return {
-    id: `task-admin-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    id: generateId('task-admin'),
     title: form.title.trim(),
     description: form.description.trim() || undefined,
     type: form.type,
@@ -138,6 +141,13 @@ function buildTaskFromForm(form: TaskFormState, suggestedPoints: number): Task {
     assignedTo: form.assignedTo || undefined,
     fairnessPoints: customPoints > 0 ? customPoints : suggestedPoints,
   };
+}
+
+function getAccessibleLabel(base: string, value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return base;
+  const shortened = trimmed.length > 50 ? `${trimmed.slice(0, 47)}…` : trimmed;
+  return `${base} ${shortened}`;
 }
 
 export function AdminPage({
@@ -189,7 +199,16 @@ export function AdminPage({
     [state.tasks],
   );
 
-  const currentUserName = familyMembers.find((member) => member.id === state.currentUser)?.name ?? 'Aktiver User';
+  const currentUserName =
+    familyMembers.find((member) => member.id === state.currentUser)?.name ?? 'Benutzer';
+  const shopItemLookup = useMemo(
+    () => new Map(state.shopItems.map((item) => [item.id, item])),
+    [state.shopItems],
+  );
+  const familyMemberLookup = useMemo(
+    () => new Map(familyMembers.map((member) => [member.id, member])),
+    [],
+  );
 
   const handleAddTask = () => {
     if (!taskForm.title.trim()) return;
@@ -200,7 +219,7 @@ export function AdminPage({
   const handleSaveTaskPoints = (task: Task) => {
     const rawValue = taskPointDrafts[task.id];
     const nextPoints = Number(rawValue);
-    if (!Number.isFinite(nextPoints) || nextPoints <= 0) return;
+    if (!Number.isFinite(nextPoints) || nextPoints < 1) return;
     updateTask(task.id, { fairnessPoints: nextPoints });
     setTaskPointDrafts((prev) => {
       const nextDrafts = { ...prev };
@@ -212,13 +231,13 @@ export function AdminPage({
   const handleAddReward = () => {
     if (!rewardForm.name.trim()) return;
     addShopItem({
-      id: `reward-custom-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      id: generateId('reward-custom'),
       name: rewardForm.name.trim(),
       description: rewardForm.description.trim() || undefined,
       cost: Number(rewardForm.cost) || 10,
       icon: rewardForm.icon.trim() || '🎁',
       theme: rewardForm.theme,
-      featured: Number(rewardForm.cost) >= 40,
+      featured: Number(rewardForm.cost) >= FEATURED_REWARD_COST_THRESHOLD,
     });
     setRewardForm(REWARD_FORM_DEFAULTS);
   };
@@ -388,7 +407,7 @@ export function AdminPage({
                     value={taskForm.fairnessPoints}
                     onChange={(event) => setTaskForm((prev) => ({ ...prev, fairnessPoints: event.target.value }))}
                     className={inputClassName}
-                    placeholder={`${suggestedPoints}`}
+                    placeholder={String(suggestedPoints)}
                   />
                   <p className="mt-1 text-[11px] text-slate-400">Empfohlen aus Engine: {suggestedPoints} Punkte</p>
                 </div>
@@ -448,7 +467,7 @@ export function AdminPage({
                         <button
                           onClick={() => deleteTask(task.id)}
                           className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-50 text-red-500 transition hover:bg-red-100"
-                          aria-label={`Aufgabe ${task.title} löschen`}
+                          aria-label={getAccessibleLabel('Aufgabe löschen:', task.title)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -630,7 +649,7 @@ export function AdminPage({
                           <button
                             onClick={() => deleteShopItem(item.id)}
                             className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/75 text-slate-500 transition hover:bg-red-50 hover:text-red-500"
-                            aria-label={`${item.name} entfernen`}
+                            aria-label={getAccessibleLabel('Reward entfernen:', item.name)}
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
@@ -679,8 +698,8 @@ export function AdminPage({
               <div className="space-y-3">
                 {state.shopRedemptions.length > 0 ? (
                   state.shopRedemptions.slice(0, 6).map((redemption) => {
-                    const item = state.shopItems.find((entry) => entry.id === redemption.shopItemId);
-                    const member = familyMembers.find((entry) => entry.id === redemption.memberId);
+                    const item = shopItemLookup.get(redemption.shopItemId);
+                    const member = familyMemberLookup.get(redemption.memberId);
                     return (
                       <div key={redemption.id} className="glass-panel flex items-center justify-between gap-3 rounded-[24px] px-4 py-3">
                         <div>
